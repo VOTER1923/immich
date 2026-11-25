@@ -9,8 +9,9 @@ import 'package:immich_mobile/constants/constants.dart';
 import 'package:immich_mobile/domain/models/store.model.dart';
 import 'package:immich_mobile/entities/store.entity.dart';
 import 'package:immich_mobile/infrastructure/repositories/network.repository.dart';
-import 'package:logging/logging.dart';
 import 'package:immich_mobile/repositories/tus_upload.dart';
+import 'package:logging/logging.dart';
+
 final uploadRepositoryProvider = Provider((ref) => UploadRepository());
 
 class UploadRepository {
@@ -66,6 +67,22 @@ class UploadRepository {
     required String logContext,
     Client? httpClient,
   }) async {
+    // Files over 8 MB go through the chunked (tus) upload service instead.
+    if (file.lengthSync() > kTusThresholdBytes) {
+      final tus = await TusUploader.upload(
+        client: httpClient ?? NetworkRepository.client,
+        file: file,
+        originalFileName: originalFileName,
+        fields: fields,
+        cancelToken: cancelToken,
+        onProgress: onProgress,
+      );
+      if (tus.cancelled) return UploadResult.cancelled();
+      if (tus.isSuccess) return UploadResult.success(remoteAssetId: tus.remoteAssetId!);
+      logger.warning("Chunked upload $logContext failed: ${tus.errorMessage}");
+      return UploadResult.error(statusCode: tus.statusCode, errorMessage: tus.errorMessage);
+    }
+
     final String savedEndpoint = Store.get(StoreKey.serverEndpoint);
 
     ProgressMultipartRequest buildRequest() {
@@ -150,42 +167,4 @@ class ProgressMultipartRequest extends MultipartRequest with Abortable {
     final stream = byteStream.transform(
       StreamTransformer.fromHandlers(
         handleData: (List<int> data, EventSink<List<int>> sink) {
-          bytes += data.length;
-          onProgress!(bytes, total);
-          sink.add(data);
-        },
-      ),
-    );
-    return ByteStream(stream);
-  }
-}
-
-class UploadResult {
-  final bool isSuccess;
-  final bool isCancelled;
-  final String? remoteAssetId;
-  final String? errorMessage;
-  final int? statusCode;
-  final Object? error;
-
-  const UploadResult({
-    required this.isSuccess,
-    required this.isCancelled,
-    this.remoteAssetId,
-    this.errorMessage,
-    this.statusCode,
-    this.error,
-  });
-
-  factory UploadResult.success({required String remoteAssetId}) {
-    return UploadResult(isSuccess: true, isCancelled: false, remoteAssetId: remoteAssetId);
-  }
-
-  factory UploadResult.error({String? errorMessage, int? statusCode}) {
-    return UploadResult(isSuccess: false, isCancelled: false, errorMessage: errorMessage, statusCode: statusCode);
-  }
-
-  factory UploadResult.cancelled() {
-    return const UploadResult(isSuccess: false, isCancelled: true);
-  }
-}
+          byte
