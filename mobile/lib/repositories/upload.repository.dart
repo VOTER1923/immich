@@ -167,4 +167,12 @@ class ProgressMultipartRequest extends MultipartRequest with Abortable {
     final stream = byteStream.transform(
       StreamTransformer.fromHandlers(
         handleData: (List<int> data, EventSink<List<int>> sink) {
-          byte
+          bytes += data.length;
+          onProgress?.call(bytes, total);
+          sink.add(data);
+        },
+      ),
+    );
+    return ByteStream(stream);
+  }
+}
