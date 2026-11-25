@@ -10,7 +10,7 @@ import 'package:immich_mobile/domain/models/store.model.dart';
 import 'package:immich_mobile/entities/store.entity.dart';
 import 'package:immich_mobile/infrastructure/repositories/network.repository.dart';
 import 'package:logging/logging.dart';
-
+import 'package:immich_mobile/repositories/tus_upload.dart';
 final uploadRepositoryProvider = Provider((ref) => UploadRepository());
 
 class UploadRepository {
