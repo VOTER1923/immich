@@ -12,7 +12,7 @@ import 'package:path_provider/path_provider.dart';
 
 /// Hard-coded settings: any file larger than this goes through the tus service.
 const int kTusThresholdBytes = 8 * 1024 * 1024;
-const int kTusChunkBytes = 32 * 1024 * 1024;
+const int kTusChunkBytes = 5 * 1024 * 1024;
 const String kTusEndpoint = 'https://upload.alexnet.com.au/files/';
 
 class TusResult {
