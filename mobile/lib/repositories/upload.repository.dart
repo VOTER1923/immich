@@ -147,6 +147,42 @@ class UploadRepository {
   }
 }
 
+class UploadResult {
+  final bool isSuccess;
+  final bool isCancelled;
+  final String? remoteAssetId;
+  final String? errorMessage;
+  final int? statusCode;
+  final Object? error;
+
+  const UploadResult({
+    required this.isSuccess,
+    required this.isCancelled,
+    this.remoteAssetId,
+    this.errorMessage,
+    this.statusCode,
+    this.error,
+  });
+
+  factory UploadResult.success({required String remoteAssetId}) {
+    return UploadResult(isSuccess: true, isCancelled: false, remoteAssetId: remoteAssetId);
+  }
+
+  factory UploadResult.error({String? errorMessage, int? statusCode, Object? error}) {
+    return UploadResult(
+      isSuccess: false,
+      isCancelled: false,
+      errorMessage: errorMessage,
+      statusCode: statusCode,
+      error: error,
+    );
+  }
+
+  factory UploadResult.cancelled() {
+    return const UploadResult(isSuccess: false, isCancelled: true);
+  }
+}
+
 class ProgressMultipartRequest extends MultipartRequest with Abortable {
   ProgressMultipartRequest(super.method, super.url, {this.abortTrigger, this.onProgress});
 
